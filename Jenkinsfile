@@ -9,7 +9,8 @@ pipeline {
         stage('Build & Deploy') {
             steps {
                 sh '''
-                cd backend
+                cd backend && ls -ltr
+
                 
                 # Create a Dockerfile
                 cat > Dockerfile << 'EOF'
