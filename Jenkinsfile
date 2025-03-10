@@ -13,51 +13,42 @@ pipeline {
                 sh '''
                 # Check Docker availability
                 echo "Docker version:"
-                docker --version || echo "Docker command failed"
+                docker --version
                 
-                # Check current directory structure
+                # Check directory structure
                 echo "Directory structure:"
                 ls -la
                 '''
             }
         }
 
-        stage('Build & Deploy') {
+        stage('Build & Deploy Backend') {
             steps {
                 sh '''
-                # Verify directory structure
-                echo "Root directory contents:"
-                ls -la
-                
-                # Navigate to backend directory
-                cd devops-code-challenge/backend || { echo "Failed to navigate to backend directory"; exit 1; }
+                # Navigate to backend directory (use the direct path, not nested)
+                cd backend
                 
                 # Verify working directory
                 echo "Current directory: $(pwd)"
                 echo "Backend directory contents:"
                 ls -la
                 
-                # Create a Dockerfile with error checking
+                # Create a Dockerfile
                 echo "Creating Dockerfile..."
                 cat > Dockerfile << 'EOF'
 FROM node:18
 WORKDIR /app
 COPY . .
-RUN npm ci
+RUN npm install
 EXPOSE 8080
 CMD ["npm", "start"]
 EOF
                 
                 # Verify Dockerfile was created
-                if [ ! -f Dockerfile ]; then
-                    echo "Failed to create Dockerfile"
-                    exit 1
-                fi
-                
                 echo "Dockerfile contents:"
                 cat Dockerfile
                 
-                # Build the container with explicit error reporting
+                # Build the container
                 echo "Building Docker image..."
                 docker build -t backend-app . || { echo "Docker build failed with exit code $?"; exit 1; }
                 
@@ -70,9 +61,9 @@ EOF
                 echo "Starting container..."
                 docker run -d --name backend-app -p 5000:8080 backend-app || { echo "Docker run failed with exit code $?"; exit 1; }
                 
-                # Verify the container is running
+                # Check container status
                 echo "Container status:"
-                docker ps -a | grep backend-app || echo "Container not found in docker ps output"
+                docker ps | grep backend-app || echo "Container not showing in docker ps"
                 '''
             }
         }
@@ -86,13 +77,22 @@ EOF
                 
                 # Check container logs
                 echo "Container logs:"
-                docker logs backend-app || echo "Could not get container logs"
+                docker logs backend-app
                 
                 # Test endpoint with more detailed output
                 echo "Testing endpoint..."
                 curl -v http://localhost:5000 || echo "Curl failed with exit code $?"
                 '''
             }
+        }
+    }
+    
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
+        failure {
+            echo 'Pipeline failed. Check the logs for details.'
         }
     }
 }
