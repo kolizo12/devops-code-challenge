@@ -30,11 +30,17 @@ pipeline {
                 
                 # Run the new container
                 docker run -d --name backend-app -p 5000:8080 backend-app
-                
-                # Check if it's running
-                sleep 5
-                curl -s http://localhost:5000 || echo "App failed to start"
                 '''
+            }
+        }
+        stage('Test Endpoint') {
+            steps {
+                script {
+                    def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:5000", returnStdout: true).trim()
+                    if (response != '200') {
+                        error("Application failed to start! HTTP response: ${response}")
+                    }
+                }
             }
         }
     }
