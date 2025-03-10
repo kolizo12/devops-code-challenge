@@ -48,6 +48,7 @@ pipeline {
                 WORKDIR /app
                 COPY . .
                 RUN npm ci
+                RUN npm audit fix --force
                 EXPOSE 3000
                 ENV REACT_APP_API_URL=http://localhost:5000
                 CMD ["npm", "start"]
