@@ -9,7 +9,7 @@ pipeline {
         stage('Build & Deploy') {
             steps {
                 sh '''
-                cd devops-code-challenge/backend
+                cd backend
                 
                 # Create a Dockerfile
                 cat > Dockerfile << 'EOF'
