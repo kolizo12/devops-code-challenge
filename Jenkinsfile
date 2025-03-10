@@ -21,7 +21,10 @@ pipeline {
                 EXPOSE 8080
                 CMD ["npm", "start"]
                 EOF
+
                 echo 'Dockerfile created successfully'
+                ls -l Dockerfile
+                cat Dockerfile
                 # Build and run the container
                 docker build -t backend-app .
                 
