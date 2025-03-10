@@ -75,6 +75,7 @@ EOF
                 echo "Backend IP address: $backend"
                 frontend=$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' frontend-app)
                 echo "Frontend IP address: $frontend"
+                echo "Testing backend..."
                 curl -sSf http://$backend:8080 || exit 1
                 curl -sSf http://$frontend:3000 || exit 1
                 '''
