@@ -22,7 +22,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
-                sh "backend && PORT=3000 npm start"
+                sh "cd backend && PORT=3000 npm start"
             }
         }
     }
