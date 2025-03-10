@@ -31,9 +31,8 @@ pipeline {
                 sh '''
                 docker stop backend-app || true
                 docker rm backend-app || true
-                docker run -d --name backend-app -p 8080:8080 \
-                    -e CORS_ORIGIN=http://localhost:3000 backend-app
-                echo "Backend running on port 8080"
+                docker run -d --name backend-app -p 8080:8080 -e CORS_ORIGIN=http://localhost:3000 backend-app
+                echo "Backend running on port 5001"
                 '''
             }
         }
@@ -44,14 +43,14 @@ pipeline {
                 sh '''
                 cd frontend
                 docker build -t frontend-app -f- . << 'EOF'
-                FROM node:16
-                WORKDIR /app
-                COPY . .
-                RUN npm install
-                EXPOSE 3000
-                ENV REACT_APP_API_URL=http://localhost:8080
-                CMD ["npm", "start"]
-                EOF
+                    FROM node:16
+                    WORKDIR /app
+                    COPY . .
+                    RUN npm install
+                    EXPOSE 3000
+                    ENV REACT_APP_API_URL=http://localhost:3000
+                    CMD ["npm", "start"]
+                    EOF
                 '''
             }
         }
@@ -67,14 +66,12 @@ pipeline {
             }
         }
 
-        // Testing Stage
         stage('Test') {
             steps {
                 sh '''
                 sleep 10
                 echo "Testing backend..."
                 curl -s http://localhost:8080 || echo "Backend test failed"
-                
                 echo "Testing frontend..."
                 curl -s http://localhost:3000 || echo "Frontend test failed"
                 '''
