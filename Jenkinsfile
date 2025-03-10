@@ -11,7 +11,7 @@ pipeline {
             steps {
                 echo 'Installing dependencies...'
                 git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
-                sh "cd backend && npm ci"
+                sh "cd backend && npm audit fix && npm ci"
             }
         }
         stage('Test') {
@@ -22,7 +22,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
-                sh "cd backend && PORT=3000 npm start"
+                sh "cd backend && PORT=5000 npm start"
             }
         }
     }
