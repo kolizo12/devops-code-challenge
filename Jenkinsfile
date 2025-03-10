@@ -18,7 +18,7 @@ FROM node:18
 WORKDIR /app
 COPY . .
 RUN npm install
-RUN npm audit fix --force 
+RUN npm audit fix 
 EXPOSE 8080
 CMD ["npm", "start"]
 EOF
@@ -47,7 +47,6 @@ FROM node:18
 WORKDIR /app
 COPY . .
 RUN npm install
-RUN npm audit fix
 EXPOSE 3000
 ENV REACT_APP_API_URL=http://localhost:5001
 CMD ["npm", "start"]
