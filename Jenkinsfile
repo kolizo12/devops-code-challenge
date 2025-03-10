@@ -3,26 +3,38 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
-                echo 'Checking out code...'
                 git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
             }
         }
-        stage('Build') {
+        stage('Build & Deploy') {
             steps {
-                echo 'Installing dependencies...'
-                git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
-                sh "cd backend && npm audit fix && npm ci"
-            }
-        }
-        stage('Test') {
-            steps {
-                echo 'Testing..'
-            }
-        }
-        stage('Deploy') {
-            steps {
-                echo 'Deploying....'
-                sh "cd backend && PORT=5000 npm start"
+                sh '''
+                cd devops-code-challenge/backend
+                
+                # Create a Dockerfile
+                cat > Dockerfile << 'EOF'
+                FROM node:18
+                WORKDIR /app
+                COPY . .
+                RUN npm ci
+                EXPOSE 8080
+                CMD ["npm", "start"]
+                EOF
+                
+                # Build and run the container
+                docker build -t backend-app .
+                
+                # Stop existing container if it exists
+                docker stop backend-app || true
+                docker rm backend-app || true
+                
+                # Run the new container
+                docker run -d --name backend-app -p 5000:8080 backend-app
+                
+                # Check if it's running
+                sleep 5
+                curl -s http://localhost:5000 || echo "App failed to start"
+                '''
             }
         }
     }
