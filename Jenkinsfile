@@ -43,7 +43,7 @@ EOF
                 sh '''
                 cd frontend
                 docker build -t frontend-app -f- . << 'EOF'
-FROM node:18
+FROM node:16
 WORKDIR /app
 COPY . .
 RUN npm install
@@ -61,7 +61,7 @@ EOF
                 docker stop frontend-app || true
                 docker rm frontend-app || true
                 docker run -d --name frontend-app -p 3001:3000 frontend-app
-                echo "Frontend running on port 3001"
+                echo "Frontend running on port 3000"
                 '''
             }
         }
@@ -71,9 +71,9 @@ EOF
                 sh '''
                 sleep 10
                 echo "Testing backend..."
-                curl -s http://localhost:5001 || echo "Backend test failed"
+                curl -s http://localhost:8080 || echo "Backend test failed"
                 echo "Testing frontend..."
-                curl -s http://localhost:3001 || echo "Frontend test failed"
+                curl -s http://localhost:3000 || echo "Frontend test failed"
                 '''
             }
         }
