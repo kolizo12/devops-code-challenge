@@ -71,9 +71,12 @@ EOF
                 sh '''
                 sleep 10
                 echo "Testing backend..."
-                curl -s http://localhost:8080 || echo "Backend test failed"
-                echo "Testing frontend..."
-                curl -s http://localhost:3000 || echo "Frontend test failed"
+                backend=$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' backend-app)
+                echo "Backend IP address: $backend"
+                frontend=$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' frontend-app)
+                echo "Frontend IP address: $frontend"
+                curl -sSf http://$backend:8080 || exit 1
+                curl -sSf http://$frontend:3000 || exit 1
                 '''
             }
         }
