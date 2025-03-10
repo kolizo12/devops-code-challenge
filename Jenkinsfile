@@ -40,6 +40,7 @@ FROM node:18
 WORKDIR /app
 COPY . .
 RUN npm install
+RUN npm audit fix --force
 EXPOSE 8080
 CMD ["npm", "start"]
 EOF
