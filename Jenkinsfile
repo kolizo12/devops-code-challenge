@@ -81,5 +81,19 @@ EOF
                 '''
             }
         }
+        stage('build image') {
+            steps {
+                sh '''
+                sleep 10
+                cd backend
+                docker image tag backend-app kolizo12/backend-app:$BUILD_NUMBER
+                docker image push kolizo12/backend-app:$BUILD_NUMBER
+                cd ../frontend
+                docker image tag frontend-app kolizo12/frontend-app:$BUILD_NUMBER
+                docker image push kolizo12/frontend-app:$BUILD_NUMBER
+                '''
+            }
+        }
+
     }
 }
