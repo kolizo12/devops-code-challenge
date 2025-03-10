@@ -1,11 +1,17 @@
 pipeline {
     agent any
     stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out code...'
+                git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
+            }
+        }
         stage('Build') {
             steps {
-                echo 'Building..'
+                echo 'Installing dependencies...'
                 git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
-                sh "cd backend && npm ci && npm start"
+                sh "cd backend && npm ci"
             }
         }
         stage('Test') {
@@ -16,6 +22,7 @@ pipeline {
         stage('Deploy') {
             steps {
                 echo 'Deploying....'
+                sh "backend && PORT=3000 npm start"
             }
         }
     }
