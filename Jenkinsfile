@@ -31,7 +31,7 @@ EOF
                 sh '''
                 docker stop backend-app || true
                 docker rm backend-app || true
-                docker run -d --name backend-app -p 5001:8080 -e CORS_ORIGIN=http://localhost:3001 backend-app
+                docker run -d --name backend-app -p 8080:8080 -e CORS_ORIGIN=http://localhost:3000 backend-app
                 echo "Backend running on port 5001"
                 '''
             }
@@ -48,7 +48,7 @@ WORKDIR /app
 COPY . .
 RUN npm install
 EXPOSE 3000
-ENV REACT_APP_API_URL=http://localhost:5001
+ENV REACT_APP_API_URL=http://localhost:3000
 CMD ["npm", "start"]
 EOF
                 '''
@@ -60,7 +60,7 @@ EOF
                 sh '''
                 docker stop frontend-app || true
                 docker rm frontend-app || true
-                docker run -d --name frontend-app -p 3001:3000 frontend-app
+                docker run -d --name frontend-app -p 3000:3000 frontend-app
                 echo "Frontend running on port 3000"
                 '''
             }
