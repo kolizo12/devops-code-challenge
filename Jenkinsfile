@@ -93,9 +93,11 @@ EOF
                 sh '''
                 sleep 10
                 cd backend
+                echo "Building backend image"
                 docker image tag backend-app kolizo12/backend-app:$BUILD_NUMBER
                 docker image push kolizo12/backend-app:$BUILD_NUMBER
                 cd ../frontend
+                echo "Building frontend image"
                 docker image tag frontend-app kolizo12/frontend-app:$BUILD_NUMBER
                 docker image push kolizo12/frontend-app:$BUILD_NUMBER
                 '''
