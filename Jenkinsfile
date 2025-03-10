@@ -14,14 +14,14 @@ pipeline {
                 sh '''
                 cd backend
                 docker build -t backend-app -f- . << 'EOF'
-                FROM node:18
-                WORKDIR /app
-                COPY . .
-                RUN npm install
-                RUN npm audit fix 
-                EXPOSE 8080
-                CMD ["npm", "start"]
-                EOF
+FROM node:18
+WORKDIR /app
+COPY . .
+RUN npm install
+RUN npm audit fix 
+EXPOSE 8080
+CMD ["npm", "start"]
+EOF
                 '''
             }
         }
@@ -43,14 +43,14 @@ pipeline {
                 sh '''
                 cd frontend
                 docker build -t frontend-app -f- . << 'EOF'
-                    FROM node:16
-                    WORKDIR /app
-                    COPY . .
-                    RUN npm install
-                    EXPOSE 3000
-                    ENV REACT_APP_API_URL=http://localhost:3000
-                    CMD ["npm", "start"]
-                    EOF
+FROM node:16
+WORKDIR /app
+COPY . .
+RUN npm install
+EXPOSE 3000
+ENV REACT_APP_API_URL=http://localhost:3000
+CMD ["npm", "start"]
+EOF
                 '''
             }
         }
