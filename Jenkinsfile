@@ -36,6 +36,13 @@ pipeline {
         stage('Test Endpoint') {
             steps {
                 script {
+                    // Check if the container is running
+                    sh "docker ps -a"
+
+                    // Check logs for errors
+                    sh "docker logs backend-app || true"
+
+                    // Test endpoint
                     def response = sh(script: "curl -s -o /dev/null -w '%{http_code}' http://localhost:5000", returnStdout: true).trim()
                     if (response != '200') {
                         error("Application failed to start! HTTP response: ${response}")
