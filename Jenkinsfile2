@@ -1,3 +1,6 @@
+Here's the corrected Jenkinsfile2:
+
+```groovy
 pipeline {
     agent any
 
@@ -5,23 +8,20 @@ pipeline {
         // AWS credentials from Jenkins environment variables
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_SESSION_TOKEN = credentials('AWS_SESSION_TOKEN') // Optional, if you're using temporary credentials
+        AWS_SESSION_TOKEN = credentials('AWS_SESSION_TOKEN') 
         
         // AWS and EKS configuration
-        AWS_REGION = credentials('AWS_REGION') ?: 'us-east-1'
-        EKS_CLUSTER_NAME = credentials('EKS_CLUSTER_NAME') ?: 'my-app-cluster'
-        KUBERNETES_NAMESPACE = credentials('KUBERNETES_NAMESPACE') ?: 'my-app'
+        AWS_REGION = "${env.AWS_REGION ?: 'us-east-1'}"
+        EKS_CLUSTER_NAME = "${env.EKS_CLUSTER_NAME ?: 'my-app-cluster'}" 
+        KUBERNETES_NAMESPACE = "${env.KUBERNETES_NAMESPACE ?: 'my-app'}"
         
-        // Application configuration - these images are pushed by the first pipeline
+        // Application configuration
         BACKEND_IMAGE = 'kolizo/backend-app'
         FRONTEND_IMAGE = 'kolizo/frontend-app'
-        
-        // Parameter passed from the first pipeline or manually specified
-        IMAGE_TAG = params.IMAGE_TAG
     }
 
     parameters {
-        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker image tag to deploy (typically the BUILD_NUMBER from the first pipeline)')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker image tag to deploy')
     }
 
     stages {
@@ -75,7 +75,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ${BACKEND_IMAGE}:${IMAGE_TAG}
+        image: ${BACKEND_IMAGE}:${params.IMAGE_TAG}
         ports:
         - containerPort: 8080
         env:
@@ -108,7 +108,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: ${FRONTEND_IMAGE}:${IMAGE_TAG}
+        image: ${FRONTEND_IMAGE}:${params.IMAGE_TAG}
         ports:
         - containerPort: 3000
         env:
@@ -238,3 +238,4 @@ spec:
         }
     }
 }
+```
