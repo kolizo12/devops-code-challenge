@@ -1,59 +1,143 @@
-# Overview
-This repository contains a React frontend, and an Express backend that the frontend connects to.
+# DevOps Code Challenge
 
-# Objective
-Deploy the frontend and backend to somewhere publicly accessible over the internet. The AWS Free Tier should be more than sufficient to run this project, but you may use any platform and tooling you'd like for your solution.
+This repository contains a containerized application with CI/CD pipelines for deployment to both local Docker environments and Amazon EKS (Elastic Kubernetes Service).
 
-Fork this repo as a base. You may change any code in this repository to suit the infrastructure you build in this code challenge.
+## Project Structure
 
-# Submission
-1. A github repo that has been forked from this repo with all your code.
-2. Modify this README file with instructions for:
-* Any tools needed to deploy your infrastructure
-* All the steps needed to repeat your deployment process
-* URLs to the your deployed frontend.
-
-# Evaluation
-You will be evaluated on the ease to replicate your infrastructure. This is a combination of quality of the instructions, as well as any scripts to automate the overall setup process.
-
-# Setup your environment
-Install nodejs. Binaries and installers can be found on nodejs.org.
-https://nodejs.org/en/download/
-
-For macOS or Linux, Nodejs can usually be found in your preferred package manager.
-https://nodejs.org/en/download/package-manager/
-
-Depending on the Linux distribution, the Node Package Manager `npm` may need to be installed separately.
-
-# Running the project
-The backend and the frontend will need to run on separate processes. The backend should be started first.
 ```
-cd backend
-npm ci
-npm start
+devops-code-challenge/
+├── backend/             # Node.js backend application
+├── frontend/            # React frontend application
+├── Jenkinsfile          # CI/CD pipeline for local Docker deployment
+├── Jenkinsfile2         # CI/CD pipeline for EKS deployment
+└── main.tf         # Infrastructure as Code for EKS cluster
 ```
-The backend should response to a GET request on `localhost:8080`.
 
-With the backend started, the frontend can be started.
+## Application Components
+
+### Backend
+
+- Node.js application
+- Exposes RESTful API on port 8080
+- Containerized with Docker
+
+### Frontend
+
+- React application
+- Connects to the backend API
+- Containerized with Docker
+- Exposed on port 3000
+
+## CI/CD Pipelines
+
+This project uses Jenkins pipelines for continuous integration and deployment.
+
+### Local Docker Deployment (Jenkinsfile)
+
+The first pipeline handles:
+
+1. Building Docker images for both frontend and backend
+2. Local deployment for testing
+3. Running basic health checks
+4. Tagging and pushing images to Docker Hub
+5. Triggering the EKS deployment pipeline
+
+```groovy
+// Key stages
+stage('Build Backend')       // Builds backend Docker image
+stage('Deploy Backend')      // Runs backend container locally
+stage('Build Frontend')      // Builds frontend Docker image
+stage('Deploy Frontend')     // Runs frontend container locally
+stage('Test')                // Runs health checks on both services
+stage('Build and Push Images') // Pushes images to Docker Hub
+stage('Trigger EKS Deployment') // Triggers the EKS pipeline
 ```
-cd frontend
-npm ci
-npm start
+
+### EKS Deployment (Jenkinsfile2)
+
+The second pipeline handles:
+
+1. Validating deployment parameters
+2. Configuring AWS CLI and kubectl
+3. Deploying Kubernetes resources to EKS
+4. Verifying the deployment
+
+```groovy
+// Key stages
+stage('Validate Parameters')    // Checks required parameters
+stage('Configure kubectl')      // Sets up AWS and kubectl
+stage('Deploy to EKS')          // Applies Kubernetes manifests
+stage('Verify Deployment')      // Validates the deployment
 ```
-The frontend can be accessed at `localhost:3000`. If the frontend successfully connects to the backend, a message saying "SUCCESS" followed by a guid should be displayed on the screen.  If the connection failed, an error message will be displayed on the screen.
 
-# Configuration
-The frontend has a configuration file at `frontend/src/config.js` that defines the URL to call the backend. This URL is used on `frontend/src/App.js#12`, where the front end will make the GET call during the initial load of the page.
+## Kubernetes Resources
 
-The backend has a configuration file at `backend/config.js` that defines the host that the frontend will be calling from. This URL is used in the `Access-Control-Allow-Origin` CORS header, read in `backend/index.js#14`
+The EKS deployment creates the following resources:
 
-# Optional Extras
-The core requirement for this challenge is to get the provided application up and running for consumption over the public internet. That being said, there are some opportunities in this code challenge to demonstrate your skill sets that are above and beyond the core requirement.
+- **Deployments**: For both frontend and backend applications
+- **Services**: ClusterIP for backend, LoadBalancer for frontend
+- **Ingress**: AWS ALB-based ingress for routing traffic
 
-A few examples of extras for this coding challenge:
-1. Dockerizing the application
-2. Scripts to set up the infrastructure
-3. Providing a pipeline for the application deployment
-4. Running the application in a serverless environment
+## Infrastructure as Code
 
-This is not an exhaustive list of extra features that could be added to this code challenge. At the end of the day, this section is for you to demonstrate any skills you want to show that’s not captured in the core requirement.
+The EKS cluster is provisioned using Terraform with the following components:
+
+- VPC with public and private subnets
+- EKS cluster with managed node groups
+- IAM roles and policies for cluster operation
+- Add-ons like CoreDNS and pod identity agent
+
+## Setup and Usage
+
+### Prerequisites
+
+- Jenkins with Docker support
+- AWS CLI and kubectl installed
+- AWS account with EKS permissions
+- Docker Hub account
+
+### Environment Variables
+
+Set the following environment variables in Jenkins:
+
+- `AWS_ACCESS_KEY_ID`: AWS access key
+- `AWS_SECRET_ACCESS_KEY`: AWS secret key
+- `AWS_REGION`: AWS region (e.g., "us-west-1")
+- `EKS_CLUSTER_NAME`: Name of your EKS cluster (e.g., "demo")
+- `KUBERNETES_NAMESPACE`: Namespace for deployments (e.g., "my-app")
+
+### Jenkins Credentials
+
+Create the following Jenkins credentials:
+
+- `docker-hub-credentials`: Username/password for Docker Hub
+
+### Running the Pipelines
+
+1. Create a Jenkins pipeline job pointing to `Jenkinsfile`
+2. Create a second Jenkins pipeline job pointing to `Jenkinsfile2`
+3. Run the first pipeline, which will automatically trigger the second upon completion
+
+### Accessing the Application
+
+After successful deployment, the application will be accessible via:
+
+- The LoadBalancer URL (printed in the pipeline logs)
+- The Ingress ALB URL (if configured)
+
+## Terraform Deployment
+
+To deploy the EKS cluster:
+
+```bash
+cd terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+Configure kubectl to connect to your cluster:
+
+```bash
+aws eks update-kubeconfig --name demo --alias demo --region us-west-1
+```
