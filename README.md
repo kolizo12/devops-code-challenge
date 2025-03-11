@@ -10,7 +10,7 @@ devops-code-challenge/
 ├── frontend/            # React frontend application
 ├── Jenkinsfile          # CI/CD pipeline for local Docker deployment
 ├── Jenkinsfile2         # CI/CD pipeline for EKS deployment
-└── terraform/           # Infrastructure as Code for EKS cluster
+└── main.tf           # Infrastructure as Code for EKS cluster
 ```
 
 ## Application Components
