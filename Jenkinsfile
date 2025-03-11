@@ -1,20 +1,20 @@
 pipeline {
     agent any
-
     stages {
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
                 sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                }
+            }
         }
-    }
-}
+        
         stage('Checkout') {
             steps {
                 git url: 'https://github.com/kolizo12/devops-code-challenge.git', branch: 'main'
             }
         }
-
+        
         // Backend Stages
         stage('Build Backend') {
             steps {
@@ -32,18 +32,18 @@ EOF
                 '''
             }
         }
-
+        
         stage('Deploy Backend') {
             steps {
                 sh '''
                 docker stop backend-app || true
                 docker rm backend-app || true
                 docker run -d --name backend-app -p 8080:8080 -e CORS_ORIGIN=http://localhost:3000 backend-app
-                echo "Backend running on port 5001"
+                echo "Backend running on port 8080"
                 '''
             }
         }
-
+        
         // Frontend Stages
         stage('Build Frontend') {
             steps {
@@ -61,7 +61,7 @@ EOF
                 '''
             }
         }
-
+        
         stage('Deploy Frontend') {
             steps {
                 sh '''
@@ -72,7 +72,7 @@ EOF
                 '''
             }
         }
-
+        
         stage('Test') {
             steps {
                 sh '''
@@ -88,11 +88,12 @@ EOF
                 '''
             }
         }
-        stage('build image') {
+        
+        stage('Build and Push Images') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
-                sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
-        }
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                }
                 sh '''
                 sleep 10
                 cd backend
@@ -106,6 +107,24 @@ EOF
                 '''
             }
         }
-
+        
+        stage('Trigger EKS Deployment') {
+            steps {
+                build job: 'eks-deployment-pipeline', parameters: [
+                    string(name: 'IMAGE_TAG', value: "${BUILD_NUMBER}")
+                ], wait: false
+                
+                echo "EKS deployment has been triggered with image tag: ${BUILD_NUMBER}"
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "Initial pipeline completed successfully. EKS deployment has been triggered."
+        }
+        failure {
+            echo "Pipeline failed. EKS deployment was not triggered."
+        }
     }
 }
