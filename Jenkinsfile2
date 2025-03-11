@@ -5,29 +5,26 @@ pipeline {
         // AWS credentials from Jenkins environment variables
         AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        AWS_SESSION_TOKEN = credentials('AWS_SESSION_TOKEN') // Optional, if you're using temporary credentials
         
-        // AWS and EKS configuration
-        AWS_REGION = credentials('AWS_REGION') ?: 'us-east-1'
-        EKS_CLUSTER_NAME = credentials('EKS_CLUSTER_NAME') ?: 'my-app-cluster'
-        KUBERNETES_NAMESPACE = credentials('KUBERNETES_NAMESPACE') ?: 'my-app'
+        // AWS and EKS configuration - use direct values
+        AWS_REGION = 'us-east-1'
+        EKS_CLUSTER_NAME = 'my-app-cluster'
+        KUBERNETES_NAMESPACE = 'my-app'
         
-        // Application configuration - these images are pushed by the first pipeline
+        // Application configuration
         BACKEND_IMAGE = 'kolizo/backend-app'
         FRONTEND_IMAGE = 'kolizo/frontend-app'
-        
-        // Parameter passed from the first pipeline or manually specified
-        IMAGE_TAG = params.IMAGE_TAG
     }
 
     parameters {
-        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker image tag to deploy (typically the BUILD_NUMBER from the first pipeline)')
+        string(name: 'IMAGE_TAG', defaultValue: '', description: 'Docker image tag to deploy')
     }
 
     stages {
         stage('Validate Parameters') {
             steps {
                 script {
+                    // Here you can use params.IMAGE_TAG safely
                     if (!params.IMAGE_TAG?.trim()) {
                         error "IMAGE_TAG parameter is required but was not provided"
                     }
@@ -35,19 +32,19 @@ pipeline {
                 }
             }
         }
-
+        
         stage('Configure kubectl') {
             steps {
                 sh """
-                    # Configure AWS CLI with environment variables
+                    # Configure AWS CLI
                     aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
                     aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
                     aws configure set region ${AWS_REGION}
                     
-                    # Update kubeconfig to access EKS cluster
+                    # Update kubeconfig
                     aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME} --region ${AWS_REGION}
                     
-                    # Check if namespace exists, create if it doesn't
+                    # Check namespace
                     kubectl get namespace ${KUBERNETES_NAMESPACE} || kubectl create namespace ${KUBERNETES_NAMESPACE}
                 """
             }
@@ -56,7 +53,7 @@ pipeline {
         stage('Deploy to EKS') {
             steps {
                 script {
-                    // Create Kubernetes manifest files
+                    // Create manifests and deploy
                     writeFile file: 'backend-deployment.yaml', text: """
 apiVersion: apps/v1
 kind: Deployment
@@ -75,156 +72,16 @@ spec:
     spec:
       containers:
       - name: backend
-        image: ${BACKEND_IMAGE}:${IMAGE_TAG}
+        image: ${BACKEND_IMAGE}:${params.IMAGE_TAG}
         ports:
         - containerPort: 8080
-        env:
-        - name: CORS_ORIGIN
-          value: "http://frontend-service.${KUBERNETES_NAMESPACE}.svc.cluster.local"
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "500m"
 """
 
-                    writeFile file: 'frontend-deployment.yaml', text: """
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: frontend-deployment
-  namespace: ${KUBERNETES_NAMESPACE}
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: frontend
-  template:
-    metadata:
-      labels:
-        app: frontend
-    spec:
-      containers:
-      - name: frontend
-        image: ${FRONTEND_IMAGE}:${IMAGE_TAG}
-        ports:
-        - containerPort: 3000
-        env:
-        - name: REACT_APP_API_URL
-          value: "/api"
-        resources:
-          requests:
-            memory: "128Mi"
-            cpu: "100m"
-          limits:
-            memory: "256Mi"
-            cpu: "200m"
-"""
-
-                    writeFile file: 'backend-service.yaml', text: """
-apiVersion: v1
-kind: Service
-metadata:
-  name: backend-service
-  namespace: ${KUBERNETES_NAMESPACE}
-spec:
-  selector:
-    app: backend
-  ports:
-  - port: 8080
-    targetPort: 8080
-  type: ClusterIP
-"""
-
-                    writeFile file: 'frontend-service.yaml', text: """
-apiVersion: v1
-kind: Service
-metadata:
-  name: frontend-service
-  namespace: ${KUBERNETES_NAMESPACE}
-spec:
-  selector:
-    app: frontend
-  ports:
-  - port: 80
-    targetPort: 3000
-  type: LoadBalancer
-"""
-
-                    writeFile file: 'ingress.yaml', text: """
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: app-ingress
-  namespace: ${KUBERNETES_NAMESPACE}
-  annotations:
-    kubernetes.io/ingress.class: alb
-    alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
-spec:
-  rules:
-  - http:
-      paths:
-      - path: /api
-        pathType: Prefix
-        backend:
-          service:
-            name: backend-service
-            port:
-              number: 8080
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: frontend-service
-            port:
-              number: 80
-"""
-
-                    // Apply Kubernetes manifests
+                    // Apply manifests
                     sh """
                     kubectl apply -f backend-deployment.yaml
-                    kubectl apply -f frontend-deployment.yaml
-                    kubectl apply -f backend-service.yaml
-                    kubectl apply -f frontend-service.yaml
-                    kubectl apply -f ingress.yaml
                     """
                 }
-            }
-        }
-
-        stage('Verify Deployment') {
-            steps {
-                sh """
-                # Wait for deployments to be ready
-                kubectl rollout status deployment/backend-deployment -n ${KUBERNETES_NAMESPACE} --timeout=300s
-                kubectl rollout status deployment/frontend-deployment -n ${KUBERNETES_NAMESPACE} --timeout=300s
-                
-                # Get service information
-                echo "Backend Service:"
-                kubectl get service backend-service -n ${KUBERNETES_NAMESPACE} -o wide
-                
-                echo "Frontend Service:"
-                kubectl get service frontend-service -n ${KUBERNETES_NAMESPACE} -o wide
-                
-                # Get Ingress information (this will show the ALB endpoint)
-                echo "Ingress:"
-                kubectl get ingress app-ingress -n ${KUBERNETES_NAMESPACE}
-                
-                # Get the Load Balancer URL (if available)
-                LB_URL=\$(kubectl get service frontend-service -n ${KUBERNETES_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-                if [ ! -z "\$LB_URL" ]; then
-                  echo "Application is accessible at: http://\$LB_URL"
-                fi
-                
-                # Get the Ingress ALB URL (if available)
-                INGRESS_URL=\$(kubectl get ingress app-ingress -n ${KUBERNETES_NAMESPACE} -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
-                if [ ! -z "\$INGRESS_URL" ]; then
-                  echo "Application is also accessible via Ingress at: http://\$INGRESS_URL"
-                fi
-                """
             }
         }
     }
