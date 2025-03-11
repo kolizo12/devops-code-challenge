@@ -20,7 +20,7 @@ pipeline {
             steps {
                 sh '''
                 cd backend
-                docker build -t backend-app -f- . << 'EOF'
+                docker build --platform linux/amd64 -t backend-app -f- . << 'EOF'
 FROM node:18
 WORKDIR /app
 COPY . .
@@ -49,7 +49,7 @@ EOF
             steps {
                 sh '''
                 cd frontend
-                docker build -t frontend-app -f- . << 'EOF'
+                docker build --platform linux/amd64 -t frontend-app -f- . << 'EOF'
 FROM node:16
 WORKDIR /app
 COPY . .
