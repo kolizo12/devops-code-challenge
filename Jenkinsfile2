@@ -2,14 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // AWS credentials from Jenkins environment variables
-        AWS_ACCESS_KEY_ID = credentials('AWS_ACCESS_KEY_ID')
-        AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
-        
-        // AWS and EKS configuration - use direct values
-        AWS_REGION = 'us-east-1'
-        EKS_CLUSTER_NAME = 'my-app-cluster'
-        KUBERNETES_NAMESPACE = 'my-app'
+
         
         // Application configuration
         BACKEND_IMAGE = 'kolizo/backend-app'
@@ -37,18 +30,19 @@ pipeline {
             steps {
                 sh """
                     # Configure AWS CLI
-                    aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-                    aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-                    aws configure set region ${AWS_REGION}
+                    aws configure set aws_access_key_id ${env.AWS_ACCESS_KEY_ID}
+                    aws configure set aws_secret_access_key ${env.AWS_SECRET_ACCESS_KEY}
+                    aws configure set region ${env.AWS_REGION}
                     
                     # Update kubeconfig
-                    aws eks update-kubeconfig --name ${EKS_CLUSTER_NAME} --region ${AWS_REGION}
+                    aws eks update-kubeconfig --name my-app-cluster --region ${env.AWS_REGION}
                     
                     # Check namespace
-                    kubectl get namespace ${KUBERNETES_NAMESPACE} || kubectl create namespace ${KUBERNETES_NAMESPACE}
+                    kubectl get namespace my-app || kubectl create namespace my-app
                 """
             }
         }
+
 
         stage('Deploy to EKS') {
             steps {
