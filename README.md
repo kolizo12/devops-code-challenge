@@ -141,3 +141,12 @@ Configure kubectl to connect to your cluster:
 ```bash
 aws eks update-kubeconfig --name demo --alias demo --region us-west-1
 ```
+
+```bash
+kubectl get po
+NAME                                   READY   STATUS    RESTARTS      AGE
+backend-deployment-5674547f9b-st87l    1/1     Running   0             89s
+backend-deployment-5674547f9b-v9t7s    1/1     Running   0             89s
+frontend-deployment-7c9b855c56-5zpjt   1/1     Running   1 (20s ago)   89s
+frontend-deployment-7c9b855c56-rp74l   1/1     Running   1 (17s ago)   89s
+```
