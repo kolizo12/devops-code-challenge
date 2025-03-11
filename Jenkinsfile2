@@ -36,7 +36,7 @@ pipeline {
                     aws configure set region ${env.AWS_REGION}
                     
                     # Update kubeconfig
-                    aws eks update-kubeconfig --name my-app-cluster --region ${env.AWS_REGION}
+                    aws eks update-kubeconfig --name ${env.EKS_CLUSTER_NAME} --region ${env.AWS_REGION}
                     
                     # Check namespace
                     kubectl get namespace my-app || kubectl create namespace my-app
