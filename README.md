@@ -10,7 +10,7 @@ devops-code-challenge/
 ├── frontend/            # React frontend application
 ├── Jenkinsfile          # CI/CD pipeline for local Docker deployment
 ├── Jenkinsfile2         # CI/CD pipeline for EKS deployment
-└── main.tf         # Infrastructure as Code for EKS cluster
+└── terraform/           # Infrastructure as Code for EKS cluster
 ```
 
 ## Application Components
@@ -142,11 +142,65 @@ Configure kubectl to connect to your cluster:
 aws eks update-kubeconfig --name demo --alias demo --region us-west-1
 ```
 
+## Deployment Verification
+
+After deployment, you can verify the application is running correctly:
+
+### Check Pod Logs
+
 ```bash
-kubectl get po
-NAME                                   READY   STATUS    RESTARTS      AGE
-backend-deployment-5674547f9b-st87l    1/1     Running   0             89s
-backend-deployment-5674547f9b-v9t7s    1/1     Running   0             89s
-frontend-deployment-7c9b855c56-5zpjt   1/1     Running   1 (20s ago)   89s
-frontend-deployment-7c9b855c56-rp74l   1/1     Running   1 (17s ago)   89s
+# View frontend logs
+kubectl logs frontend-deployment-8765c697f-sqgdn -f
+
+# Sample output:
+> frontend@0.1.0 start
+> react-scripts start
+(node:25) [DEP_WEBPACK_DEV_SERVER_ON_AFTER_SETUP_MIDDLEWARE] DeprecationWarning: 'onAfterSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+(node:25) [DEP_WEBPACK_DEV_SERVER_ON_BEFORE_SETUP_MIDDLEWARE] DeprecationWarning: 'onBeforeSetupMiddleware' option is deprecated. Please use the 'setupMiddlewares' option.
+Starting the development server...
+Compiled successfully!
+You can now view frontend in the browser.
+  Local:            http://localhost:3000
+  On Your Network:  http://10.0.26.150:3000
+Note that the development build is not optimized.
+To create a production build, use npm run build.
+webpack compiled successfully
 ```
+
+### Access the Application
+
+You can access the application via the AWS Load Balancer URL:
+
+```bash
+# Get the LoadBalancer URL
+kubectl get service frontend-service -n my-app -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+
+# Access the application
+curl abb9aea1c9c55471dbf9e6a2b7378235-1507234697.us-west-1.elb.amazonaws.com
+```
+
+Sample response showing the application is serving correctly:
+```html
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#000000" />
+    <meta
+      name="description"
+      content="Web site created using create-react-app"
+    />
+    <title>Lightfeather Test App</title>
+  <script defer src="/static/js/bundle.js"></script></head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
+```
+For a werid reason it loadini=g on the browser look problematic
+
+I get a load failed
+
