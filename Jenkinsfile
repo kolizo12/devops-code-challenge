@@ -95,6 +95,7 @@ EOF
                     sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
                 }
                 sh '''
+                sh 'printenv'
                 sleep 10
                 cd backend
                 echo "Building backend image"
