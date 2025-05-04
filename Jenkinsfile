@@ -65,6 +65,7 @@ EOF
         stage('Deploy Frontend') {
             steps {
                 sh '''
+                printenv
                 docker stop frontend-app || true
                 docker rm frontend-app || true
                 docker run -d --name frontend-app -p 3000:3000 frontend-app
