@@ -76,6 +76,7 @@ EOF
         stage('Test') {
             steps {
                 sh '''
+                printenv
                 sleep 10
                 echo "Testing backend..."
                 backend=$(docker inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' backend-app)
