@@ -76,6 +76,7 @@ EOF
         stage('Test') {
             steps {
                 sh '''
+                echo "This is me!"
                 printenv
                 sleep 10
                 echo "Testing backend..."
