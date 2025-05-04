@@ -36,7 +36,8 @@ EOF
         stage('Deploy Backend') {
             steps {
                 sh '''
-                docker stop backend-app || true
+                ls -a
+		docker stop backend-app || true
                 docker rm backend-app || true
                 docker run -d --name backend-app -p 8080:8080 -e CORS_ORIGIN=http://localhost:3000 backend-app
                 echo "Backend running on port 8080"
